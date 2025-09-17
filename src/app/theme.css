@@ -1,0 +1,61 @@
+/* This file replaces your tailwind.config.ts. */
+/* It defines the entire "Aura" design system using CSS Custom Properties. */
+:root {
+  /* FONT FAMILY */
+  --font-heading: 'Sora', 'Poppins', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* BORDER RADIUS */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+  
+  /* SHADOWS */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(139, 92, 246, 0.3);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --shadow-glass-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* TRANSITIONS */
+  --transition-fast: all 0.2s ease-in-out;
+  --transition-medium: all 0.3s ease-in-out;
+
+  /* AURA THEME - LIGHT MODE COLORS */
+  --background: #F9F9FB;
+  --surface: #FFFFFF;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --border: #E5E7EB;
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --accent: #8B5CF6;
+  --positive: #10B981;
+  --negative: #F43F5E;
+  
+  --positive-surface: #ECFDF5;
+  --negative-surface: #FFF1F2;
+}
+
+html.dark {
+  /* AURA THEME - DARK MODE COLORS */
+  --background: #111317;
+  --surface: #1A1D23;
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --border: #374151;
+  --primary: #818CF8;
+  --primary-hover: #A5B4FC;
+  --accent: #A78BFA;
+  --positive: #34D399;
+  --negative: #FB7185;
+
+  --positive-surface: #064E3B;
+  --negative-surface: #881337;
+}

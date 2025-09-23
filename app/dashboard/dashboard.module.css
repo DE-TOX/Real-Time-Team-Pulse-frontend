@@ -1,0 +1,132 @@
+/* Dashboard Layout Styles */
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+/* Fixed Navbar at Top */
+.navbarContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 64px; /* Fixed navbar height */
+}
+
+/* Main Layout below navbar */
+.mainLayout {
+  display: flex;
+  margin-top: 64px; /* Account for fixed navbar height */
+  min-height: calc(100vh - 64px);
+}
+
+/* Sidebar Container */
+.sidebarContainer {
+  width: 280px;
+  position: fixed;
+  top: 64px; /* Below navbar */
+  left: -280px; /* Hidden by default on mobile */
+  bottom: 0;
+  z-index: 40;
+  transition: left 0.3s ease;
+  background: var(--background);
+  border-right: 1px solid var(--border);
+}
+
+/* Desktop: Always show sidebar */
+@media (min-width: 1024px) {
+  .sidebarContainer {
+    position: relative;
+    top: 0;
+    left: 0;
+    flex-shrink: 0;
+  }
+}
+
+/* Mobile: Show/hide sidebar */
+.sidebarOpen {
+  left: 0;
+}
+
+/* Content Container */
+.contentContainer {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0;
+}
+
+/* Desktop: Account for sidebar width */
+@media (min-width: 1024px) {
+  .contentContainer {
+    margin-left: 0; /* No margin needed as sidebar is in normal flow */
+  }
+}
+
+/* Page Content */
+.pageContent {
+  padding: 2rem;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Mobile Overlay */
+.mobileOverlay {
+  position: fixed;
+  top: 64px; /* Below navbar */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 35;
+}
+
+/* Loading States */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1.5rem;
+}
+
+.loadingSpinner {
+  position: relative;
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingText {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pageContent {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageContent {
+    padding: 0.75rem;
+  }
+}

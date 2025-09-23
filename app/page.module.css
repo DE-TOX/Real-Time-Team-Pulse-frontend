@@ -42,7 +42,7 @@
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-2xl);
-  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  /* border: 1px solid color-mix(in srgb, var(--border) 50%, transparent); */
   background-color: color-mix(in srgb, var(--surface) 60%, transparent);
   padding: 2rem;
   box-shadow: var(--shadow-glass);

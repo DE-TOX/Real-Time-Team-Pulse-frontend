@@ -1,5 +1,7 @@
 'use client'
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { checkInsAPI, getAuthToken, handleAPIError } from '@/lib/api';
 import {
   Card,
   CardContent,
@@ -27,73 +29,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Mock data for demonstration
-const mockCheckIns = [
-  {
-    id: 1,
-    date: '2024-01-20',
-    mood: 8,
-    energy: 7,
-    notes: 'Great productive day! Finished the project milestone.',
-    isAnonymous: false,
-    timestamp: '2024-01-20T10:30:00Z'
-  },
-  {
-    id: 2,
-    date: '2024-01-19',
-    mood: 6,
-    energy: 5,
-    notes: 'Feeling okay, but a bit tired from the week.',
-    isAnonymous: false,
-    timestamp: '2024-01-19T11:15:00Z'
-  },
-  {
-    id: 3,
-    date: '2024-01-18',
-    mood: 9,
-    energy: 9,
-    notes: 'Amazing team meeting today! Really motivated.',
-    isAnonymous: false,
-    timestamp: '2024-01-18T14:45:00Z'
-  },
-  {
-    id: 4,
-    date: '2024-01-17',
-    mood: 4,
-    energy: 3,
-    notes: 'Challenging day with some technical issues.',
-    isAnonymous: false,
-    timestamp: '2024-01-17T16:20:00Z'
-  },
-  {
-    id: 5,
-    date: '2024-01-16',
-    mood: 7,
-    energy: 8,
-    notes: 'Good progress on the new features.',
-    isAnonymous: false,
-    timestamp: '2024-01-16T09:30:00Z'
-  },
-  {
-    id: 6,
-    date: '2024-01-15',
-    mood: 5,
-    energy: 4,
-    notes: 'Monday blues, but getting back into the swing.',
-    isAnonymous: false,
-    timestamp: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: 7,
-    date: '2024-01-12',
-    mood: 8,
-    energy: 7,
-    notes: 'Great end to the week!',
-    isAnonymous: false,
-    timestamp: '2024-01-12T15:30:00Z'
-  }
-];
-
 const moodEmojis = {
   1: '😢', 2: '😔', 3: '😐', 4: '🙂', 5: '😊',
   6: '😄', 7: '🤗', 8: '🥳', 9: '🌟', 10: '✨'
@@ -119,9 +54,68 @@ const getTrendIcon = (current, previous) => {
   return <Minus className="h-4 w-4 text-gray-500" />;
 };
 
-export default function CheckInHistory({ checkIns = mockCheckIns }) {
+export default function CheckInHistory({ teamId = null, userId = null }) {
+  const { user } = useAuth();
+  const [checkIns, setCheckIns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('7');
   const [sortBy, setSortBy] = useState('date');
+
+  // Load check-ins from backend API
+  useEffect(() => {
+    if (user) {
+      loadCheckIns();
+    }
+  }, [user, teamId, userId, timeRange]);
+
+  const loadCheckIns = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      let response;
+      if (teamId) {
+        // Get team check-ins
+        const params = {
+          limit: 100,
+          include_anonymous: true
+        };
+        response = await checkInsAPI.getTeamCheckIns(token, teamId, params);
+      } else {
+        // Get personal check-ins
+        const params = {
+          limit: 100
+        };
+        response = await checkInsAPI.getPersonalCheckIns(token, params);
+      }
+
+      // Transform backend data to match component expectations
+      const transformedCheckIns = response.checkIns.map(checkIn => ({
+        id: checkIn.id,
+        date: checkIn.created_at.split('T')[0],
+        mood: checkIn.mood_score,
+        energy: checkIn.energy_level,
+        notes: checkIn.content,
+        isAnonymous: checkIn.is_anonymous,
+        timestamp: checkIn.created_at,
+        sentimentLabel: checkIn.sentiment_label,
+        sentimentScore: checkIn.sentiment_score
+      }));
+
+      setCheckIns(transformedCheckIns);
+    } catch (err) {
+      const errorMessage = handleAPIError(err, 'Failed to load check-ins');
+      setError(errorMessage);
+      console.error('Failed to load check-ins:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter and sort check-ins
   const filteredCheckIns = useMemo(() => {
@@ -149,7 +143,6 @@ export default function CheckInHistory({ checkIns = mockCheckIns }) {
 
     return filtered;
   }, [checkIns, timeRange, sortBy]);
-
   // Calculate averages and trends
   const stats = useMemo(() => {
     if (filteredCheckIns.length === 0) return null;
@@ -217,8 +210,43 @@ export default function CheckInHistory({ checkIns = mockCheckIns }) {
     window.URL.revokeObjectURL(url);
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center min-h-96 space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground">Loading check-ins...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-4 bg-red-500 rounded"></div>
+              <p className="text-red-700">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setError(null);
+                  loadCheckIns();
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header with Controls */}
       <Card>
         <CardHeader>

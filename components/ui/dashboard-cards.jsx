@@ -10,9 +10,9 @@ export function MetricCard({ title, value, change, icon: Icon, trend, className 
     <Card className={cn("relative overflow-hidden", className)}>
       <div className={cn(
         "absolute top-0 left-0 w-1 h-full",
-        isPositive && "bg-green-500",
-        isNegative && "bg-red-500",
-        !isPositive && !isNegative && "bg-yellow-500"
+        isPositive && "bg-green-500 dark:bg-green-400",
+        isNegative && "bg-red-500 dark:bg-red-400",
+        !isPositive && !isNegative && "bg-yellow-500 dark:bg-yellow-400"
       )} />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -23,8 +23,8 @@ export function MetricCard({ title, value, change, icon: Icon, trend, className 
         {change && (
           <p className={cn(
             "text-xs mt-1",
-            isPositive && "text-green-600",
-            isNegative && "text-red-600",
+            isPositive && "text-green-600 dark:text-green-400",
+            isNegative && "text-red-600 dark:text-red-400",
             !isPositive && !isNegative && "text-muted-foreground"
           )}>
             {change}
@@ -49,7 +49,7 @@ export function StatsCard({ title, description, icon: Icon, children, className 
         )}
       </CardHeader>
       <CardContent>{children}</CardContent>
-      </Card>
+    </Card>
   )
 }
 
@@ -108,10 +108,10 @@ export function CardSkeleton({ className }) {
 // Notification/Alert Card
 export function AlertCard({ title, message, type = "info", action, className }) {
   const typeStyles = {
-    info: "border-l-blue-500",
-    success: "border-l-green-500",
-    warning: "border-l-yellow-500",
-    error: "border-l-red-500"
+    info: "border-l-blue-500 dark:border-l-blue-400",
+    success: "border-l-green-500 dark:border-l-green-400",
+    warning: "border-l-yellow-500 dark:border-l-yellow-400",
+    error: "border-l-red-500 dark:border-l-red-400"
   }
   
   return (

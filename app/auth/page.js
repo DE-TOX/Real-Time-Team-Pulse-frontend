@@ -11,7 +11,7 @@ export default function AuthPage() {
   const { user, signIn, signUp, signOut, loading: authLoading } = useAuth();
   const { success, error, info } = useToast();
   const [mode, setMode] = useState('signin'); // 'signin' or 'signup'
-    const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
 
   const handleAuth = async (data) => {
@@ -108,7 +108,7 @@ export default function AuthPage() {
                 Welcome, {user.email}!
               </h1>
               <p className={styles.welcomeSubtitle}>
-                Authentication successful! You're now logged into Team Pulse.
+                Authentication successful! You're now logged into SyncUp.
               </p>
             </div>
 

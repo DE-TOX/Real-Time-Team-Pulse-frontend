@@ -225,8 +225,8 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       event.type === 'meeting'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                     }`}>
                       {event.type}
                     </span>

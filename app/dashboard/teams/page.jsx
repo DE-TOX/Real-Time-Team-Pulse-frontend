@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { teamsAPI, getAuthToken, handleAPIError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,80 +47,134 @@ import {
 
 export default function TeamsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [joinTeamOpen, setJoinTeamOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
+  const [createLoading, setCreateLoading] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
 
-  // Mock data for demonstration
+  // Load teams from backend API
   useEffect(() => {
-    const mockTeams = [
-      {
-        id: 1,
-        name: 'Product Development',
-        description: 'Main product development team working on core features',
-        memberCount: 12,
-        role: 'admin',
-        createdAt: '2024-01-15',
-        inviteCode: 'PROD-DEV-2024',
-        settings: {
-          timezone: 'UTC-8',
-          region: 'North America',
-          isPrivate: false,
-          allowMemberInvites: true
-        }
-      },
-      {
-        id: 2,
-        name: 'Marketing Team',
-        description: 'Creative marketing and brand management team',
-        memberCount: 6,
-        role: 'member',
-        createdAt: '2024-02-20',
-        inviteCode: 'MARKETING-TEAM',
-        settings: {
-          timezone: 'UTC-5',
-          region: 'Europe',
-          isPrivate: true,
-          allowMemberInvites: false
-        }
-      }
-    ];
+    if (user) {
+      loadTeams();
+    }
+  }, [user]);
 
-    setTimeout(() => {
-      setTeams(mockTeams);
+  const loadTeams = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      const teamsData = await teamsAPI.getUserTeams(token);
+
+      // Transform backend data to match component expectations
+      const transformedTeams = teamsData.map(team => ({
+        id: team.id,
+        name: team.name,
+        description: team.description,
+        memberCount: team.members?.length || 0,
+        role: team.userRole,
+        createdAt: team.created_at,
+        inviteCode: team.invite_code,
+        settings: {
+          timezone: team.settings?.timezone || 'UTC',
+          region: team.settings?.region || 'Unknown',
+          isPrivate: team.is_private || false,
+          allowMemberInvites: team.settings?.allowMemberInvites !== false
+          },
+        createdBy: team.createdBy
+      }));
+
+      setTeams(transformedTeams);
+    } catch (err) {
+      const errorMessage = handleAPIError(err, 'Failed to load teams');
+      setError(errorMessage);
+      console.error('Failed to load teams:', err);
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
 
   const handleCreateTeam = async (formData) => {
-    // Simulate API call
-    const newTeam = {
-      id: Date.now(),
-      name: formData.get('teamName'),
-      description: formData.get('teamDescription'),
-      memberCount: 1,
-      role: 'admin',
-      createdAt: new Date().toISOString().split('T')[0],
-      inviteCode: `TEAM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-      settings: {
-        timezone: formData.get('timezone'),
-        region: formData.get('region'),
-        isPrivate: formData.get('isPrivate') === 'true',
-        allowMemberInvites: true
+    try {
+      setCreateLoading(true);
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token available');
       }
-    };
 
-    setTeams(prev => [...prev, newTeam]);
-    setCreateTeamOpen(false);
+      const teamData = {
+        name: formData.get('teamName'),
+        description: formData.get('teamDescription'),
+        isPrivate: formData.get('isPrivate') === 'true',
+        maxMembers: 50, // Default max members
+        allowAnonymousCheckins: true, // Default setting
+        settings: {
+          timezone: formData.get('timezone'),
+          region: formData.get('region')
+        }
+      };
+
+      const newTeam = await teamsAPI.createTeam(token, teamData);
+
+      // Transform and add to local state
+      const transformedTeam = {
+        id: newTeam.id,
+        name: newTeam.name,
+        description: newTeam.description,
+        memberCount: 1,
+        role: newTeam.userRole,
+        createdAt: newTeam.created_at,
+        inviteCode: newTeam.invite_code,
+        settings: {
+          timezone: teamData.settings.timezone,
+          region: teamData.settings.region,
+          isPrivate: newTeam.is_private,
+          allowMemberInvites: true
+        }
+      };
+
+      setTeams(prev => [...prev, transformedTeam]);
+      setCreateTeamOpen(false);
+    } catch (err) {
+      const errorMessage = handleAPIError(err, 'Failed to create team');
+      setError(errorMessage);
+      console.error('Failed to create team:', err);
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
   const handleJoinTeam = async () => {
-    // Simulate API call to join team
-    console.log('Joining team with code:', inviteCode);
-    setJoinTeamOpen(false);
-    setInviteCode('');
+    try {
+      setJoinLoading(true);
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      const joinedTeam = await teamsAPI.joinTeam(token, inviteCode);
+
+      // Reload teams to get the updated list
+      await loadTeams();
+
+      setJoinTeamOpen(false);
+      setInviteCode('');
+    } catch (err) {
+      const errorMessage = handleAPIError(err, 'Failed to join team');
+      setError(errorMessage);
+      console.error('Failed to join team:', err);
+    } finally {
+      setJoinLoading(false);
+    }
   };
 
   const handleCopyInviteCode = async (inviteCode) => {
@@ -146,9 +202,11 @@ export default function TeamsPage() {
     return team.role === 'admin' || team.role === 'manager';
   };
 
-  const canInviteMembers = (team) => { 
-    return team.role === 'admin' || team.role === 'manager' || team.settings?.allowMemberInvites; 
-  };
+  const canInviteMembers = (team) => {
+    return team.role === 'admin' || team.role === 'manager' || 
+    team.settings?.allowMemberInvites;
+    };
+
   const getRoleIcon = (role) => {
     switch (role) {
       case 'admin':
@@ -186,6 +244,27 @@ export default function TeamsPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Error Display */}
+      {error && (
+        <Card className="bg-red-50 border-red-200">
+            <CardContent className="pt-6">
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-4 bg-red-500 rounded"></div>
+              <p className="text-red-700">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setError(null);
+                  loadTeams();
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Header */}
       <Card>
         <CardHeader>
@@ -218,8 +297,8 @@ export default function TeamsPage() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                    <Label htmlFor="inviteCode">Invitation Code</Label>
-                    <Input
+                        <Label htmlFor="inviteCode">Invitation Code</Label>
+                        <Input
                         id="inviteCode"
                         placeholder="e.g. TEAM-ABC123"
                         value={inviteCode}
@@ -228,11 +307,25 @@ export default function TeamsPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setJoinTeamOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setJoinTeamOpen(false)}
+                      disabled={joinLoading}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={handleJoinTeam} disabled={!inviteCode.trim()}>
-                      Join Team
+                    <Button
+                      onClick={handleJoinTeam}
+                      disabled={!inviteCode.trim() || joinLoading}
+                    >
+                      {joinLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Joining...
+                        </>
+                      ) : (
+                        'Join Team'
+                      )}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -279,7 +372,7 @@ export default function TeamsPage() {
                         <Select name="timezone" defaultValue="UTC-8">
                           <SelectTrigger>
                             <SelectValue placeholder="Select timezone" />
-                          </SelectTrigger>
+                            </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="UTC-12">UTC-12 (Baker Island)</SelectItem>
                             <SelectItem value="UTC-8">UTC-8 (Pacific)</SelectItem>
@@ -288,7 +381,7 @@ export default function TeamsPage() {
                             <SelectItem value="UTC+1">UTC+1 (Central Europe)</SelectItem>
                             <SelectItem value="UTC+8">UTC+8 (Asia)</SelectItem>
                             <SelectItem value="UTC+9">UTC+9 (Japan)</SelectItem>
-                            </SelectContent>
+                          </SelectContent>
                         </Select>
                       </div>
                       <div>
@@ -321,11 +414,26 @@ export default function TeamsPage() {
                       </div>
                     </div>
                     <DialogFooter className="mt-6">
-                      <Button type="button" variant="outline" onClick={() => setCreateTeamOpen(false)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCreateTeamOpen(false)}
+                        disabled={createLoading}
+                      >
                         Cancel
                       </Button>
-                      <Button type="submit">
-                        Create Team
+                      <Button
+                        type="submit"
+                        disabled={createLoading}
+                      >
+                        {createLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Creating...
+                          </>
+                        ) : (
+                          'Create Team'
+                        )}
                       </Button>
                     </DialogFooter>
                   </form>

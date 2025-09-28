@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { checkInsAPI, aiAPI, getAuthToken, handleAPIError } from '@/lib/api';
 import {
   LineChart,
   Line,
@@ -57,128 +59,208 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const generatePersonalData = (days = 30) => {
-  const data = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    const baseHappiness = 6 + Math.random() * 3;
-    const baseEnergy = 6 + Math.random() * 3;
-
-    // Add some realistic patterns
-    const dayOfWeek = date.getDay();
-    const isFriday = dayOfWeek === 5;
-    const isMonday = dayOfWeek === 1;
-
-    data.push({
-      date: format(date, 'MMM dd'),
-      fullDate: date.toISOString(),
-      happiness: Math.max(1, Math.min(10, Math.round(
-        baseHappiness +
-        (isFriday ? -0.5 : 0) +
-        (isMonday ? -0.3 : 0) +
-        (Math.random() - 0.5)
-      ))),
-      energy: Math.max(1, Math.min(10, Math.round(
-        baseEnergy +
-        (isFriday ? -0.8 : 0) +
-        (isMonday ? -0.5 : 0) +
-        (Math.random() - 0.5)
-      ))),
-      productivity: Math.max(1, Math.min(10, Math.round(
-        (baseHappiness + baseEnergy) / 2 + (Math.random() - 0.5)
-      ))),
-      stress: Math.max(1, Math.min(10, Math.round(
-        5 + (Math.random() - 0.5) * 2 + (isFriday ? 1 : 0)
-      ))),
-      dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]
-    });
+// Helper functions for AI insights
+const getInsightIcon = (type) => {
+  switch (type) {
+    case 'pattern': return Clock;
+    case 'trend': return TrendingDown;
+    case 'correlation': return BarChart3;
+    default: return Lightbulb;
   }
-  return data;
 };
 
-const generateGoals = () => [
-  {
-    id: 1,
-    title: 'Maintain 8+ happiness score',
-    target: 8,
-    current: 7.8,
-    progress: 97.5,
-    status: 'on-track',
-    streak: 12,
-    icon: Smile,
-    color: 'text-green-600'
-  },
-  {
-    id: 2,
-    title: 'Keep energy above 7',
-    target: 7,
-    current: 7.2,
-    progress: 102.8,
-    status: 'achieved',
-    streak: 8,
-    icon: Battery,
-    color: 'text-blue-600'
-  },
-  {
-    id: 3,
-    title: 'Reduce stress below 4',
-    target: 4,
-    current: 4.5,
-    progress: 88.9,
-    status: 'needs-attention',
-    streak: 3,
-    icon: Target,
-    color: 'text-amber-600'
+const getInsightColor = (priority) => {
+  switch (priority) {
+    case 'high': return 'text-red-600';
+    case 'medium': return 'text-amber-600';
+    case 'low': return 'text-green-600';
+    default: return 'text-blue-600';
   }
-];
+};
 
-const generateInsights = () => [
+// Fallback insights when AI service is unavailable
+const generateFallbackInsights = (data) => [
   {
     id: 1,
-    title: 'Your Happy Hours',
-    insight: 'You tend to have the highest mood scores between 10-11 AM. Consider scheduling important tasks during this time.',
+    title: 'Consistency Pattern',
+    insight: 'You tend to have more consistent mood scores during weekdays. Consider maintaining your routine.',
     type: 'pattern',
     icon: Clock,
     color: 'text-blue-600'
   },
   {
     id: 2,
-    title: 'Friday Dip',
-    insight: 'Your energy consistently drops by 15% on Fridays. Maybe plan lighter workloads at week-end.',
+    title: 'Energy Trends',
+    insight: 'Your energy levels show improvement over the selected period. Keep up the good work!',
     type: 'trend',
-    icon: TrendingDown,
-    color: 'text-amber-600'
-  },
-  {
-    id: 3,
-    title: 'Productivity Correlation',
-    insight: 'Your happiness and productivity have a 87% correlation. Focusing on wellbeing improves your output.',
-    type: 'correlation',
-    icon: BarChart3,
+    icon: TrendingUp,
     color: 'text-green-600'
   }
 ];
 
-export default function PersonalAnalytics({ userId = 'current-user' }) {
+// Calculate streak for goals
+const calculateStreak = (data, metric, target, lessThan = false) => {
+  let streak = 0;
+  for (let i = data.length - 1; i >= 0; i--) {
+    const value = data[i][metric];
+    const achieved = lessThan ? value <= target : value >= target;
+    if (achieved) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+};
+
+export default function PersonalAnalytics({ userId = 'current-user', teamId = null }) {
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('30');
   const [data, setData] = useState([]);
   const [goals, setGoals] = useState([]);
   const [insights, setInsights] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState('all');
+  const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
-    loadPersonalData();
-  }, [timeRange]);
+    if (user) {
+      loadPersonalData();
+    }
+  }, [timeRange, user, teamId]);
 
   const loadPersonalData = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setData(generatePersonalData(parseInt(timeRange)));
-    setGoals(generateGoals());
-    setInsights(generateInsights());
-    setIsLoading(false);
+    setError(null);
+
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      // Get personal check-ins
+      const params = {
+        limit: parseInt(timeRange) * 2, // Get more data than the time range
+        date_from: new Date(Date.now() - parseInt(timeRange) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+
+      const checkInsResponse = await checkInsAPI.getPersonalCheckIns(token, params);
+      const checkIns = checkInsResponse.checkIns;
+
+      // Transform check-ins to chart data
+      const chartData = [];
+      const today = new Date();
+      for (let i = parseInt(timeRange) - 1; i >= 0; i--) {
+        const date = subDays(today, i);
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayCheckIns = checkIns.filter(ci =>
+          ci.created_at.split('T')[0] === dateStr
+        );
+
+        if (dayCheckIns.length > 0) {
+          const avgMood = dayCheckIns.reduce((sum, ci) => sum + ci.mood_score, 0) / dayCheckIns.length;
+          const avgEnergy = dayCheckIns.reduce((sum, ci) => sum + ci.energy_level, 0) / dayCheckIns.length;
+          const avgSentiment = dayCheckIns.reduce((sum, ci) => sum + (ci.sentiment_score || 0), 0) / dayCheckIns.length;
+
+          chartData.push({
+            date: format(date, 'MMM dd'),
+            fullDate: date.toISOString(),
+            happiness: Math.round(avgMood * 2), // Convert 1-5 scale to 1-10
+            energy: Math.round(avgEnergy * 2),
+            productivity: Math.round((avgMood + avgEnergy) * 1), // Simple productivity calculation
+            stress: Math.max(1, Math.min(10, Math.round(5 - avgSentiment * 3))), // Convert sentiment to stress
+            dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]
+          });
+        }
+      }
+
+      setData(chartData);
+
+      // Generate AI insights if we have check-ins
+      if (checkIns.length > 0) {
+        try {
+          const insightsResponse = await aiAPI.generateInsights(token, {
+            checkIns: checkIns.map(ci => ({
+              userId: ci.user_id,
+              mood: ci.mood_score,
+              energy: ci.energy_level,
+              timestamp: ci.created_at,
+              notes: ci.content,
+              sentiment: ci.sentiment_score
+            }))
+          });
+
+          // Transform AI insights to component format
+          const transformedInsights = insightsResponse.slice(0, 3).map((insight, index) => ({
+            id: index + 1,
+            title: insight.title,
+            insight: insight.description,
+            type: insight.type,
+            icon: getInsightIcon(insight.type),
+            color: getInsightColor(insight.priority)
+          }));
+
+          setInsights(transformedInsights);
+        } catch (aiError) {
+          console.error('Failed to generate AI insights:', aiError);
+          // Use fallback insights if AI fails
+          setInsights(generateFallbackInsights(chartData));
+        }
+      }
+
+      // Generate goals based on recent performance
+      const recentData = chartData.slice(-7); // Last 7 days
+      if (recentData.length > 0) {
+        const avgHappiness = recentData.reduce((sum, d) => sum + d.happiness, 0) / recentData.length;
+        const avgEnergy = recentData.reduce((sum, d) => sum + d.energy, 0) / recentData.length;
+        const avgStress = recentData.reduce((sum, d) => sum + d.stress, 0) / recentData.length;
+
+        setGoals([
+          {
+            id: 1,
+            title: 'Maintain happiness above 8',
+            target: 8,
+            current: avgHappiness,
+            progress: (avgHappiness / 8) * 100,
+            status: avgHappiness >= 8 ? 'achieved' : avgHappiness >= 7 ? 'on-track' : 'needs-attention',
+            streak: calculateStreak(chartData, 'happiness', 8),
+            icon: Smile,
+            color: 'text-green-600'
+          },
+          {
+            id: 2,
+            title: 'Keep energy above 7',
+            target: 7,
+            current: avgEnergy,
+            progress: (avgEnergy / 7) * 100,
+            status: avgEnergy >= 7 ? 'achieved' : avgEnergy >= 6 ? 'on-track' : 'needs-attention',
+            streak: calculateStreak(chartData, 'energy', 7),
+            icon: Battery,
+            color: 'text-blue-600'
+          },
+          {
+            id: 3,
+            title: 'Reduce stress below 4',
+            target: 4,
+            current: avgStress,
+            progress: avgStress <= 4 ? 100 : ((4 / avgStress) * 100),
+            status: avgStress <= 4 ? 'achieved' : avgStress <= 5 ? 'on-track' : 'needs-attention',
+            streak: calculateStreak(chartData, 'stress', 4, true), // true for "less than" goal
+            icon: Target,
+            color: 'text-amber-600'
+          }
+        ]);
+      }
+
+    } catch (err) {
+      const errorMessage = handleAPIError(err, 'Failed to load analytics data');
+      setError(errorMessage);
+      console.error('Failed to load personal analytics:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Calculate statistics
@@ -229,8 +311,43 @@ export default function PersonalAnalytics({ userId = 'current-user' }) {
     return null;
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6 p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center min-h-96 space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground">Loading your wellness data...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-6">
+      {/* Error Display */}
+      {error && (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-4 bg-red-500 rounded"></div>
+              <p className="text-red-700">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setError(null);
+                  loadPersonalData();
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -278,7 +395,7 @@ export default function PersonalAnalytics({ userId = 'current-user' }) {
                 <TrendingDown className="h-3 w-3 mr-1 text-red-600" />
               )}
               <span className={parseFloat(happinessTrend) >= 0 ? 'text-green-600' : 'text-red-600'}>
-        {parseFloat(happinessTrend) >= 0 ? '+' : ''}{happinessTrend} from last week
+                {parseFloat(happinessTrend) >= 0 ? '+' : ''}{happinessTrend} from last week
               </span>
             </div>
           </CardContent>

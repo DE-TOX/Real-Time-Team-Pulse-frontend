@@ -42,12 +42,12 @@ export default function ModeToggle({ className = "" }) {
         checked={isDark}
         onCheckedChange={toggleTheme}
         aria-label="Toggle dark mode" />
-      <Label htmlFor={id}>
+      <Label htmlFor={id} className="cursor-pointer">
         <span className="sr-only">Toggle dark mode</span>
         {isDark ? (
-          <SunIcon size={16} aria-hidden="true" />
+          <SunIcon size={16} aria-hidden="true" className="text-foreground" />
         ) : (
-          <MoonIcon size={16} aria-hidden="true" />
+          <MoonIcon size={16} aria-hidden="true" className="text-foreground"/>
         )}
       </Label>
     </div>

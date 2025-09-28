@@ -39,7 +39,7 @@ export default function HomePage() {
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }}></div>
-        <p style={{ color: 'var(--text-secondary)' }}>Loading Team Pulse...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading SyncUp...</p>
       </div>
     );
   }

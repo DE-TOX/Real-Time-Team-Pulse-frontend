@@ -17,7 +17,7 @@ const sora = Sora({
 });
 
 export const metadata = {
-  title: "Team Pulse Dashboard",
+  title: "SyncUp Dashboard",
   description: "Real-time team wellness dashboard with AI-powered insights",
 };
 

@@ -40,14 +40,14 @@
 .logoText h2 {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0;
   line-height: 1.2;
 }
 
 .logoText p {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   margin: 0;
   line-height: 1;
 }
@@ -57,8 +57,8 @@
   width: 2rem;
   height: 2rem;
   border: none;
-  background: var(--surface);
-  color: var(--text-secondary);
+  background: var(--muted);
+  color: var(--muted-foreground);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: var(--transition-fast);
@@ -69,7 +69,7 @@
 
 .closeButton:hover {
   background: var(--border);
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 /* User Profile Section */
@@ -103,7 +103,7 @@
 .userName {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin: 0 0 0.25rem 0;
   line-height: 1.2;
   white-space: nowrap;
@@ -113,7 +113,7 @@
 
 .userEmail {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   margin: 0;
   line-height: 1;
   white-space: nowrap;
@@ -142,7 +142,7 @@
   padding: 0.75rem 1.25rem;
   border: none;
   background: none;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: var(--transition-fast);
   text-align: left;
@@ -151,13 +151,13 @@
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .navItem.active {
-  background: rgba(79, 70, 229, 0.1);
-  color: var(--primary);
+  background: var(--accent);
+  color: var(--accent-foreground);
   border-right: 3px solid var(--primary);
 }
 
@@ -212,8 +212,8 @@
   width: 100%;
   padding: 0.75rem;
   border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-secondary);
+  background: var(--muted);
+  color: var(--muted-foreground);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: var(--transition-fast);
@@ -223,9 +223,9 @@
 }
 
 .signOutButton:hover {
-  background: var(--negative-surface);
-  color: var(--negative);
-  border-color: var(--negative);
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  border-color: var(--destructive);
 }
 
 .signOutButton:disabled {
@@ -243,7 +243,7 @@
 
 .versionInfo p {
   font-size: 0.625rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   margin: 0.25rem 0;
   opacity: 0.6;
 }
@@ -282,6 +282,5 @@
 }
 
 .navigation::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--muted-foreground);
 }
-

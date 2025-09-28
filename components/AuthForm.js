@@ -41,14 +41,14 @@ export default function AuthForm({
     <div className={styles.authContainer}>
       <div className={styles.authCard}>
         <div className={styles.authHeader}>
-          {/* <Image src={Logo} alt="Team Pulse Logo" width={50} height={50} /> */}
+          {/* <Image src={Logo} alt="SyncUp Logo" width={50} height={50} /> */}
           <h1 className={styles.authTitle}>
-            {isSignUp ? "Join Team Pulse" : "Welcome Back"}
+            {isSignUp ? "Join SyncUp" : "Welcome Back"}
           </h1>
           <p className={styles.authSubtitle}>
             {isSignUp
               ? "Create your account to start tracking team wellness"
-              : "Sign in to your Team Pulse dashboard"}
+              : "Sign in to your SyncUp dashboard"}
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export default function AuthForm({
             disabled={loading}
           >
             {loading ? (isSignUp ? "Creating Account..." : "Signing In...") : (isSignUp ? "Create Account" : "Sign In")}
-            </Component>
+          </Component>
         </form>
 
         <div className={styles.authFooter}>

@@ -2,8 +2,10 @@
 .dashboardContainer {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+
+  height: 100vh;
   background: var(--background);
+  overflow: hidden;
 }
 
 /* Fixed Navbar at Top */
@@ -20,7 +22,7 @@
 .mainLayout {
   display: flex;
   margin-top: 64px; /* Account for fixed navbar height */
-  min-height: calc(100vh - 64px);
+  height: calc(100vh - 64px);
 }
 
 /* Sidebar Container */
@@ -56,6 +58,7 @@
   flex: 1;
   min-width: 0;
   margin-left: 0;
+  overflow-y: auto;
 }
 
 /* Desktop: Account for sidebar width */
@@ -129,4 +132,22 @@
   .pageContent {
     padding: 0.75rem;
   }
+}
+
+/* Scrollbar Styling */
+.contentContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.contentContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contentContainer::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.contentContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
 }

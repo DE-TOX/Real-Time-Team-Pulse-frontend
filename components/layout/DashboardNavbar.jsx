@@ -17,6 +17,16 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import ModeToggle from '../ModeToggle';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 
 // Navigation links array to be used in both desktop and mobile menus
 const navigationLinks = [
@@ -263,7 +273,6 @@ export default function DashboardNavbar({
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          <ModeToggle />
 
           {/* Landing Page Actions */}
           {isLandingPage && !user && (
@@ -286,23 +295,37 @@ export default function DashboardNavbar({
 
           {/* Dashboard Actions */}
           {isDashboardPage && user && (
-            <>
-              <Button asChild variant="ghost" size="sm" className="text-sm">
-                <a href="/dashboard/profile">Profile</a>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-sm"
-                onClick={handleSignOut}
-              >
-                Sign Out
-              </Button>
-            </>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userAvatar} alt={userName} />
+                    <AvatarFallback>{userName?.[0]}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="end" forceMount>
+                <div className="font-normal text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">{userName}</div>
+                  {userEmail}
+                </div>
+                <div className="border-b my-2" />
+                <div className="flex items-center justify-between">
+                  <span>Theme</span>
+                  <ModeToggle />
+                </div>
+                <div className="border-b my-2" />
+                <Button asChild variant="ghost" className="w-full justify-start text-sm p-2 font-normal">
+                  <a href="/dashboard/profile">Profile</a>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm p-2 font-normal" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       </div>
     </header>
   );
 }
-
